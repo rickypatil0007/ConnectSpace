@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import Navbar from "@/app/components/Navbar";
 import InterestSelector from "@/app/components/InterestSelector";
 import EventCard from "@/app/components/EventCard";
@@ -22,14 +22,14 @@ import { Sparkles, Heart, Clock, Users as UsersIcon, Bell } from "lucide-react";
 const currentUser = { ...dummyUsers[0] };
 
 export default function UserDashboard() {
-  const { data: session, status } = useSession();
+  const { user: sessionUser, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "user")) {
+    if (!isLoading && (!sessionUser || sessionUser.role !== "user")) {
       router.replace("/");
     }
-  }, [session, status, router]);
+  }, [sessionUser, isLoading, router]);
 
 
   const [interests, setInterests] = useState<InterestCategory[]>(currentUser.interests);
@@ -120,7 +120,7 @@ export default function UserDashboard() {
     { id: "booked" as const, label: "Booked", icon: Clock },
   ];
 
-  if (status === "loading" || session?.user?.role !== "user") return null;
+  if (isLoading || sessionUser?.role !== "user") return null;
 
   return (
     <div className="min-h-screen bg-background">

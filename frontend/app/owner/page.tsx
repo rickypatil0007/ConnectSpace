@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import Navbar from "@/app/components/Navbar";
 import SpaceListing from "@/app/components/SpaceListing";
 import SpaceListingForm, { SpaceFormData } from "@/app/components/SpaceListingForm";
@@ -19,14 +19,14 @@ import {
 import { Building, Bell, FileCheck, Plus } from "lucide-react";
 
 export default function SpaceOwnerDashboard() {
-  const { data: session, status } = useSession();
+  const { user: sessionUser, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "owner")) {
+    if (!isLoading && (!sessionUser || sessionUser.role !== "owner")) {
       router.replace("/");
     }
-  }, [session, status, router]);
+  }, [sessionUser, isLoading, router]);
 
 
   const [spaces, setSpaces] = useState<Space[]>(dummySpaces);
@@ -94,7 +94,7 @@ export default function SpaceOwnerDashboard() {
     { id: "proposals" as const, label: "My Proposals", icon: FileCheck },
   ];
 
-  if (status === "loading" || session?.user?.role !== "owner") return null;
+  if (isLoading || sessionUser?.role !== "owner") return null;
 
   return (
     <div className="min-h-screen bg-background">

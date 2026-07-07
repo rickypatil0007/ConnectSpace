@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 import Navbar from "@/app/components/Navbar";
 import EventCreationForm, { EventFormData } from "@/app/components/EventCreationForm";
 import ProposalComparison from "@/app/components/ProposalComparison";
@@ -20,14 +20,14 @@ import {
 import { Plus, FileText, BarChart3, CheckCircle, ClipboardList } from "lucide-react";
 
 export default function OrganizerDashboard() {
-  const { data: session, status } = useSession();
+  const { user: sessionUser, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "organizer")) {
+    if (!isLoading && (!sessionUser || sessionUser.role !== "organizer")) {
       router.replace("/");
     }
-  }, [session, status, router]);
+  }, [sessionUser, isLoading, router]);
 
 
   const [eventRequests, setEventRequests] = useState<EventRequest[]>(dummyEventRequests);
@@ -129,7 +129,7 @@ export default function OrganizerDashboard() {
     { id: "reports" as const, label: "Impact Reports", icon: BarChart3 },
   ];
 
-  if (status === "loading" || session?.user?.role !== "organizer") return null;
+  if (isLoading || sessionUser?.role !== "organizer") return null;
 
   return (
     <div className="min-h-screen bg-background">

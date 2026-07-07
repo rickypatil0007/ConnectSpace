@@ -3,27 +3,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Building2, MapPin } from "lucide-react";
-import { signIn, useSession } from "next-auth/react";
+import { useAuth, Role } from "@/lib/auth-context";
 
 export default function Home() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { user, login, isLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
 
   // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<"user" | "organizer" | "owner">("user");
+  const [role, setRole] = useState<Role>("user");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // If already authenticated, redirect to their dashboard
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.role) {
-      router.replace(`/${session.user.role}`);
+    if (user && !isLoading) {
+      router.replace(`/${user.role}`);
     }
-  }, [session, status, router]);
+  }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,36 +31,24 @@ export default function Home() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const res = await signIn("credentials", {
-          redirect: false,
-          email,
-          password,
-        });
-        if (res?.error) {
-          setError(res.error);
-        } else {
-          // session effect will redirect
-        }
-      } else {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role }),
-        });
-        const data = await res.json();
-        
-        if (!res.ok) {
-          setError(data.message || "Registration failed");
-        } else {
-          // Auto login after register
-          await signIn("credentials", {
-            redirect: false,
-            email,
-            password,
-          });
-        }
+      // For this ideathon demo, we bypass backend auth
+      // and just log them in as the requested role locally
+      if (!isLogin && !name) {
+        setError("Name is required");
+        setLoading(false);
+        return;
       }
+
+      // Simulate a small delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      const loginName = isLogin ? (email.split('@')[0] || "User") : name;
+      const loginRole = isLogin ? (
+        email.includes("organizer") ? "organizer" : 
+        email.includes("owner") ? "owner" : "user"
+      ) : role;
+
+      login(loginRole, loginName, email);
     } catch (err: any) {
       setError("An unexpected error occurred.");
     } finally {
@@ -69,7 +57,7 @@ export default function Home() {
   };
 
   // Show a loading spinner instead of a blank white screen
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy"></div>
@@ -77,7 +65,7 @@ export default function Home() {
     );
   }
   
-  if (status === "authenticated") return null;
+  if (user) return null;
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center px-4 py-8 sm:py-16">

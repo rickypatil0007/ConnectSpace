@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Users, Building2, MapPin, LogOut, Menu, X } from "lucide-react";
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 
 const roleConfig: Record<
   string,
@@ -15,15 +15,15 @@ const roleConfig: Record<
 };
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setMenuOpen(false);
-    await signOut({ callbackUrl: "/" });
+    logout();
   };
 
-  const role = session?.user?.role;
+  const role = user?.role;
   const config = role ? roleConfig[role] : null;
 
   return (
@@ -33,12 +33,12 @@ export default function Navbar() {
           ConnectSpace
         </Link>
 
-        {session?.user && (
+        {user && (
           <>
             {/* Desktop nav */}
             <div className="hidden sm:flex items-center gap-4">
               <span className="text-sm font-medium text-gray hidden md:inline">
-                Welcome, <span className="text-navy">{session.user.name}</span>
+                Welcome, <span className="text-navy">{user.name}</span>
               </span>
               <div className="flex items-center gap-3">
                 {config && (
@@ -74,10 +74,10 @@ export default function Navbar() {
       </div>
 
       {/* Mobile dropdown menu */}
-      {session?.user && menuOpen && (
+      {user && menuOpen && (
         <div className="sm:hidden border-t border-gray/10 bg-white/95 backdrop-blur-sm px-4 py-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <p className="text-sm text-gray">
-            Welcome, <span className="font-medium text-navy">{session.user.name}</span>
+            Welcome, <span className="font-medium text-navy">{user.name}</span>
           </p>
           {config && (
             <span
